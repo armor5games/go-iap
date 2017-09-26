@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
@@ -120,7 +121,25 @@ func (c *Client) Verify(req IAPRequest, result interface{}) error {
 	}
 	defer resp.Body.Close()
 
-	err = json.NewDecoder(resp.Body).Decode(result)
+	httpBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	var (
+		v  *IAPResponse
+		ok bool
+	)
+
+	if v, ok = result.(*IAPResponse); ok {
+		v.bytes = httpBody
+	}
+
+	err = json.Unmarshal(httpBody, result)
 
 	return err
+}
+
+func (v *IAPResponse) Bytes() ([]byte, error) {
+	return v.bytes, nil
 }
